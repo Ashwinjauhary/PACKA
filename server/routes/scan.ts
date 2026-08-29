@@ -114,7 +114,8 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
       const mlFormData = new FormData();
       mlFormData.append('image', new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }), file.originalname);
       
-      const mlResponse = await fetch('http://localhost:8000/analyze', {
+      const mlBackendUrl = process.env.ML_BACKEND_URL || 'http://127.0.0.1:8000';
+      const mlResponse = await fetch(`${mlBackendUrl}/analyze`, {
         method: 'POST',
         body: mlFormData
       });

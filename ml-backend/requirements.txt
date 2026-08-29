@@ -8,3 +8,4 @@ easyocr
 pillow
 pydantic
 pyzbar
+gradio

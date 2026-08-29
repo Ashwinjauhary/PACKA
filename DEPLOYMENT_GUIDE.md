@@ -18,24 +18,30 @@ We need a cloud PostgreSQL database to store users and compliance scan results.
 Since the Python backend requires 1-2GB of RAM for YOLOv8 and Transformers NER, HuggingFace Spaces (which offers 16GB RAM for free) is the best choice.
 1. Go to [HuggingFace Spaces](https://huggingface.co/spaces) and click **Create new Space**.
 2. Name your space (e.g., `packa-ml-engine`).
-3. Select **Docker** as the Space SDK and choose **Blank**.
-4. In the Space files, upload the *entire contents* of your `ml-backend/` folder (including the newly created `Dockerfile` and `requirements.txt`).
-5. The space will automatically start building. Once running, click "App" to get your live URL.
+3. Select **Gradio** as the Space SDK and choose **Blank** (This is entirely free!).
+4. Keep Space hardware as **ZeroGPU Free** or **CPU Basic**.
+5. In the Space files, upload the *entire contents* of your `ml-backend/` folder. The newly added `app.py` ensures the FastAPI server runs flawlessly inside the Gradio Space.
+6. The space will automatically start building. Once running, click "App" to get your live URL.
    *(It will look like: `https://yourusername-packa-ml-engine.hf.space`)*
 
 ---
 
 ## 3. Node.js Backend (Render)
-We will deploy the main Express server on Render using the included Infrastructure-as-Code file (`render.yaml`).
+We will deploy the main Express server on Render using a manual Web Service (which is completely free).
 1. Go to [Render](https://render.com) and link your GitHub account.
-2. Go to your dashboard and click **New > Blueprint**.
+2. Go to your dashboard and click **New > Web Service** (Do NOT use Blueprint).
 3. Connect your GitHub repository containing this codebase.
-4. Render will automatically detect the `render.yaml` file and prepare the web service.
-5. Before deploying, it will ask you for Environment Variables. Provide them:
+4. Fill in the following details:
+   - Name: `packa-backend` (or anything)
+   - Runtime: `Node`
+   - Build Command: `cd server && npm install && npm run build`
+   - Start Command: `cd server && npm start`
+   - Instance Type: **Free**
+5. Scroll down to **Environment Variables** and click "Add Environment Variable". Add these 3:
    - `DATABASE_URL`: Paste the URI you copied from Supabase (Step 1).
    - `JWT_SECRET`: Type any random secure string (e.g., `sih_super_secret_2026`).
    - `ML_BACKEND_URL`: Paste the live URL of your HuggingFace Space (Step 2).
-6. Click **Deploy**. Once finished, copy the backend live URL.
+6. Click **Create Web Service**. Once finished, copy the backend live URL.
    *(It will look like: `https://packa-backend.onrender.com`)*
 
 ---

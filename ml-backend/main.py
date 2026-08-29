@@ -6,6 +6,8 @@ from typing import Dict, Any
 from vision import segment_pdp, extract_barcode
 from nlp import perform_ocr_and_ner
 
+import asyncio
+
 app = FastAPI(title="PACKA ML Backend")
 
 app.add_middleware(
@@ -15,9 +17,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+async def warmup_models():
+    print("Background Task: Warming up models...")
+    from vision import get_yolo_model
+    from nlp import get_reader, get_ner_pipeline
+    
+    # These will trigger the downloads
+    get_yolo_model()
+    get_reader()
+    get_ner_pipeline()
+    print("Background Task: Models warmed up successfully!")
+
+@app.on_event("startup")
+async def startup_event():
+    # Spawn a background task to load models so it doesn't block port binding
+    asyncio.create_task(warmup_models())
+
 @app.get("/")
 def read_root():
-    return {"status": "ML Backend is running (YOLOv8 + Transformers NER Ready)"}
+    return {"status": "ML Backend is running (Models loading in background)"}
 
 @app.post("/analyze")
 async def analyze_image(image: UploadFile = File(...)):

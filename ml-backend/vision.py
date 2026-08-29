@@ -5,13 +5,18 @@ try:
     from pyzbar.pyzbar import decode
 except Exception:
     decode = None
-# We simulate loading ultralytics since we are deploying a local hackathon model,
-# but we write the real API logic as if yolov8n is present.
-try:
-    from ultralytics import YOLO
-    model = YOLO('yolov8n.pt')  # We will use yolov8 nano for the real backend
-except ImportError:
-    model = None
+
+_model = None
+
+def get_yolo_model():
+    global _model
+    if _model is None:
+        try:
+            from ultralytics import YOLO
+            _model = YOLO('yolov8n.pt')
+        except ImportError:
+            _model = None
+    return _model
 
 def segment_pdp(image_bytes: bytes) -> np.ndarray:
     """
@@ -23,6 +28,7 @@ def segment_pdp(image_bytes: bytes) -> np.ndarray:
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+    model = get_yolo_model()
     if model:
         # Run YOLO inference
         results = model(img)

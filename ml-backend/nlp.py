@@ -2,34 +2,41 @@ import easyocr
 import re
 from typing import Dict, Any, List
 
-# Initialize EasyOCR
-# Now using 5 languages natively to support regional scripts
-try:
-    reader = easyocr.Reader(['en', 'hi', 'mr', 'ta', 'bn'])
-except Exception as e:
-    print("Warning: Failed to initialize multi-language EasyOCR, falling back to English only.", e)
-    try:
-        reader = easyocr.Reader(['en'])
-    except Exception as fallback_e:
-        print("Error initializing EasyOCR entirely:", fallback_e)
-        reader = None
+_reader = None
+_ner_pipeline = None
 
-# Initialize Transformers NER
-try:
-    from transformers import pipeline
-    # We use a standard NER pipeline to simulate the semantic extraction
-    # before refining with our custom regex rules for LMPC compliance.
-    ner_pipeline = pipeline("ner", aggregation_strategy="simple")
-except ImportError:
-    ner_pipeline = None
-except Exception:
-    ner_pipeline = None
+def get_reader():
+    global _reader
+    if _reader is None:
+        try:
+            _reader = easyocr.Reader(['en', 'hi', 'mr', 'ta', 'bn'])
+        except Exception as e:
+            print("Warning: Failed to initialize multi-language EasyOCR, falling back to English only.", e)
+            try:
+                _reader = easyocr.Reader(['en'])
+            except Exception as fallback_e:
+                print("Error initializing EasyOCR entirely:", fallback_e)
+                _reader = None
+    return _reader
+
+def get_ner_pipeline():
+    global _ner_pipeline
+    if _ner_pipeline is None:
+        try:
+            from transformers import pipeline
+            _ner_pipeline = pipeline("ner", aggregation_strategy="simple")
+        except ImportError:
+            _ner_pipeline = None
+        except Exception:
+            _ner_pipeline = None
+    return _ner_pipeline
 
 def perform_ocr_and_ner(image_np) -> Dict[str, Any]:
     """
     Runs EasyOCR over the pre-processed OpenCV image,
     runs a semantic NER pipeline, and then refines with LMPC regex rules.
     """
+    reader = get_reader()
     if reader is None:
         return {"error": "EasyOCR not initialized"}
         
@@ -49,6 +56,7 @@ def perform_ocr_and_ner(image_np) -> Dict[str, Any]:
     
     # 1. Transformers NER / Deep Learning Semantic Extraction
     deep_entities = []
+    ner_pipeline = get_ner_pipeline()
     if ner_pipeline:
         try:
             deep_entities = ner_pipeline(full_text)

@@ -17,7 +17,7 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"status": "ML Backend is running (YOLOv8 + LayoutLMv3 Ready)"}
+    return {"status": "ML Backend is running (YOLOv8 + Transformers NER Ready)"}
 
 @app.post("/analyze")
 async def analyze_image(image: UploadFile = File(...)):
@@ -48,7 +48,7 @@ async def analyze_image(image: UploadFile = File(...)):
                 "OpenCV Deskewing & Glare Reduction",
                 "Barcode Extraction (pyzbar)",
                 "EasyOCR Text Extraction",
-                "LayoutLMv3 Entity Classification"
+                "Transformers NER Entity Classification"
             ]
         }
     except Exception as e:

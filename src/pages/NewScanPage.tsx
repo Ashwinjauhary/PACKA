@@ -117,7 +117,7 @@ export default function NewScanPage() {
     { key: 'preprocessing', label: 'Image Pre-processing (OpenCV deskew & glare reduction)' },
     { key: 'segmentation', label: 'Computer Vision (YOLOv8 PDP Segmentation)' },
     { key: 'ocr', label: 'OCR Extraction (Tesseract/Cloud Vision)' },
-    { key: 'classification', label: 'NLP Classification (LayoutLMv3 / IndicBERT)' },
+    { key: 'classification', label: 'NLP Classification (Transformers NER)' },
     { key: 'font_analysis', label: 'Font Metrology Analysis' },
     { key: 'rule_evaluation', label: 'Rule Engine (Evaluating against LMPC Rules 2011 JSON Schema)' },
     { key: 'report_generation', label: 'Generating Compliance Report...' },
@@ -359,7 +359,7 @@ export default function NewScanPage() {
             <div className="processing-steps" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <div className="processing-step active">
                 <Loader2 size={16} className="animate-pulse" />
-                Communicating with YOLOv8 & LayoutLMv3 backend...
+                Communicating with YOLOv8 & Transformers NER backend...
               </div>
             </div>
           </div>

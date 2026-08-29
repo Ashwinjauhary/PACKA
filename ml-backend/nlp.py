@@ -9,10 +9,10 @@ try:
 except Exception as e:
     reader = None
 
-# Initialize LayoutLMv3 / Transformers NER
+# Initialize Transformers NER
 try:
     from transformers import pipeline
-    # We use a standard NER pipeline to simulate the LayoutLMv3 semantic extraction
+    # We use a standard NER pipeline to simulate the semantic extraction
     # before refining with our custom regex rules for LMPC compliance.
     ner_pipeline = pipeline("ner", aggregation_strategy="simple")
 except ImportError:
@@ -42,7 +42,7 @@ def perform_ocr_and_ner(image_np) -> Dict[str, Any]:
     
     full_text = " ".join([text for (bbox, text, prob) in results])
     
-    # 1. LayoutLMv3 / Deep Learning Semantic Extraction
+    # 1. Transformers NER / Deep Learning Semantic Extraction
     deep_entities = []
     if ner_pipeline:
         try:
@@ -54,10 +54,10 @@ def perform_ocr_and_ner(image_np) -> Dict[str, Any]:
     # 2. NLP Classification (Refining deep entities with LMPC robust regex fallbacks)
     fields = classify_fields_robust(full_text)
     
-    # 3. Merge LayoutLMv3 entities into the final output
+    # 3. Merge Transformers NER entities into the final output
     if deep_entities:
         for ent in deep_entities:
-            # We add the generic entities extracted by the LayoutLMv3 pipeline 
+            # We add the generic entities extracted by the Transformers NER pipeline 
             # to our specific LMPC fields, so they are not just printed but actually used.
             fields.append({
                 "fieldType": "generic_entity",

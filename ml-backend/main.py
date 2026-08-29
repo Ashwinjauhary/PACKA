@@ -35,7 +35,7 @@ async def analyze_image(image: UploadFile = File(...)):
         # Extract Barcode if present
         barcode = extract_barcode(image_bytes)
 
-        # 2. OCR & NLP Classification (LayoutLMv3 NER extraction)
+        # 2. OCR & NLP Classification (Transformers NER extraction)
         result = perform_ocr_and_ner(processed_image_np)
         
         return {

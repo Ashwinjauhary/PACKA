@@ -106,7 +106,7 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
       packageDimensions = JSON.parse(dimensionsStr);
     }
 
-    // Forward to Python ML Microservice (YOLOv8 + LayoutLMv3)
+    // Forward to Python ML Microservice (YOLOv8 + Transformers NER)
     let ocrResultText = "";
     let extractedFields: any[] = [];
     
@@ -207,7 +207,7 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
       });
     }
 
-    // Add generic LayoutLMv3 entities to checks
+    // Add generic Transformers NER entities to checks
     const genericEntities = extractedFields.filter(f => f.fieldType === 'generic_entity');
     for (const ent of genericEntities) {
         checksWithFonts.push({

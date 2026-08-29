@@ -1,6 +1,10 @@
 import cv2
 import numpy as np
 from PIL import Image
+try:
+    from pyzbar.pyzbar import decode
+except ImportError:
+    pass
 # We simulate loading ultralytics since we are deploying a local hackathon model,
 # but we write the real API logic as if yolov8n is present.
 try:
@@ -39,3 +43,15 @@ def segment_pdp(image_bytes: bytes) -> np.ndarray:
     enhanced = clahe.apply(gray)
     
     return enhanced
+
+
+def extract_barcode(image_bytes: bytes) -> str:
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    try:
+        barcodes = decode(img)
+        for barcode in barcodes:
+            return barcode.data.decode('utf-8')
+    except Exception:
+        pass
+    return ''

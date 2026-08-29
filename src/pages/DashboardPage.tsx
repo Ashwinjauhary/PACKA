@@ -234,6 +234,40 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* E-Commerce Check Section */}
+      <div className="glass-card" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-6)' }}>
+        <div className="section-header" style={{ marginBottom: 'var(--space-4)' }}>
+          <div className="section-title">E-Commerce Compliance Check (2026 Amendment)</div>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <input 
+            type="text" 
+            placeholder="Enter Amazon / Flipkart / Blinkit Product URL" 
+            className="input" 
+            style={{ flex: 1 }}
+            id="ecommerce-url"
+          />
+          <button 
+            className="btn btn-primary"
+            onClick={async () => {
+              const url = (document.getElementById('ecommerce-url') as HTMLInputElement).value;
+              if (!url) return alert('Please enter a URL');
+              try {
+                const res = await apiFetch('/ecommerce/check', {
+                  method: 'POST',
+                  body: JSON.stringify({ url })
+                });
+                alert(`Result: ${res.countryOfOrigin}\n\n${res.message}`);
+              } catch (e) {
+                alert('Failed to check E-Commerce URL');
+              }
+            }}
+          >
+            Check Country of Origin
+          </button>
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div style={{ marginTop: 'var(--space-8)' }}>
         <div className="section-header">

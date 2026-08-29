@@ -90,9 +90,28 @@ export default function ReportPage() {
             <div className="page-subtitle">{scan.id}</div>
           </div>
         </div>
-        <button className="btn btn-primary" onClick={handleExportPDF}>
-          <Download size={18} /> Export PDF
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          {scan.verdict.status === 'non_compliant' && (
+            <button className="btn btn-secondary" onClick={async () => {
+              try {
+                const res = await apiFetch('/sync/ejagriti', {
+                  method: 'POST',
+                  body: JSON.stringify({ scanId: scan.id, violations: scan.violations, productInfo: scan.productInfo })
+                });
+                if (res.referenceNumber) {
+                  alert(`Synced with e-Jagriti! Reference: ${res.referenceNumber}`);
+                }
+              } catch (e) {
+                alert('Failed to sync to e-Jagriti');
+              }
+            }}>
+              Sync to e-Jagriti / NCH
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={handleExportPDF}>
+            <Download size={18} /> Export PDF
+          </button>
+        </div>
       </div>
 
       {/* Verdict Banner */}

@@ -5,6 +5,8 @@ import authRoutes from './routes/auth';
 import scanRoutes from './routes/scan';
 import historyRoutes from './routes/history';
 import rulesRoutes from './routes/rules';
+import syncRoutes from './routes/sync';
+import ecommerceRoutes from './routes/ecommerce';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,6 +22,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/scan', scanRoutes);
 app.use('/api/scans', historyRoutes);
 app.use('/api/rules', rulesRoutes);
+app.use('/api/sync', syncRoutes);
+app.use('/api/ecommerce', ecommerceRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

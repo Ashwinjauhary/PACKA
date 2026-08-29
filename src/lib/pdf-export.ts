@@ -83,14 +83,30 @@ export async function generatePDF(scan: ScanRecord): Promise<Blob> {
   y += 8;
 
   // ── Scanned Image ──
-  if (scan.imageDataUrl) {
+  let imgData = scan.imageDataUrl;
+  if (!imgData && scan.imageUrl) {
+    try {
+      // Fetch the image from the server proxy and convert to base64
+      const response = await fetch(scan.imageUrl);
+      const blob = await response.blob();
+      imgData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('Failed to fetch image for PDF', e);
+    }
+  }
+
+  if (imgData) {
     checkPage(70);
     addText('Scanned Package Image', margin, y, { fontSize: 12, fontStyle: 'bold' });
     y += 7;
     try {
       // Adding image to PDF. 80x60mm maintains a reasonable thumbnail size.
       // We pass the data URL directly, jsPDF will auto-detect JPEG/PNG.
-      doc.addImage(scan.imageDataUrl, margin, y, 80, 60, undefined, 'FAST');
+      doc.addImage(imgData, margin, y, 80, 60, undefined, 'FAST');
       y += 65;
     } catch (e) {
       console.warn('Could not add image to PDF', e);

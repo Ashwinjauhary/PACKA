@@ -267,7 +267,7 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
         productInfo.brandName || null,
         productInfo.category,
         scanResult.verdict.score,
-        scanResult.verdict.status,
+        scanResult.verdict.status === 'compliant' ? 'COMPLIANT' : (scanResult.verdict.status === 'non_compliant' ? 'NON_COMPLIANT' : 'MANUAL_REVIEW_REQUIRED'),
         JSON.stringify(scanResult)
       ]
     );

@@ -68,7 +68,7 @@ def perform_ocr_and_ner(image_np) -> Dict[str, Any]:
                 "fieldType": "generic_entity",
                 "label": f"NER: {ent.get('entity_group', 'Entity')}",
                 "rawText": ent.get('word', ''),
-                "confidence": round(ent.get('score', 0) * 100, 2)
+                "confidence": float(round(ent.get('score', 0) * 100, 2))
             })
 
     for f in fields:

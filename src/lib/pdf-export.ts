@@ -82,6 +82,25 @@ export async function generatePDF(scan: ScanRecord): Promise<Blob> {
   addLine(y);
   y += 8;
 
+  // ── Scanned Image ──
+  if (scan.imageDataUrl) {
+    checkPage(70);
+    addText('Scanned Package Image', margin, y, { fontSize: 12, fontStyle: 'bold' });
+    y += 7;
+    try {
+      // Adding image to PDF. 80x60mm maintains a reasonable thumbnail size.
+      // We pass the data URL directly, jsPDF will auto-detect JPEG/PNG.
+      doc.addImage(scan.imageDataUrl, margin, y, 80, 60, undefined, 'FAST');
+      y += 65;
+    } catch (e) {
+      console.warn('Could not add image to PDF', e);
+      addText('(Image could not be rendered)', margin, y, { fontSize: 9, color: [150, 150, 150]});
+      y += 10;
+    }
+    addLine(y);
+    y += 8;
+  }
+
   // ── Summary ──
   addText('Compliance Summary', margin, y, { fontSize: 12, fontStyle: 'bold' });
   y += 7;

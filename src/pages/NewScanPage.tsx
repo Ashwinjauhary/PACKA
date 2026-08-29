@@ -75,27 +75,27 @@ export default function NewScanPage() {
     setStep('processing');
 
     try {
-      // Simulate progress for UI while the backend does the work
-      let currentProgress = 0;
-      const progressInterval = setInterval(() => {
-        currentProgress += 0.1;
-        if (currentProgress < 0.9) {
-          setProgress({
-            stage: STAGES[Math.floor(currentProgress * STAGES.length)]?.key || 'processing',
-            progress: currentProgress,
-            stageLabel: STAGES[Math.floor(currentProgress * STAGES.length)]?.label || 'Processing...',
-          });
-        }
-      }, 500);
+      setProgress({ stage: 'processing', progress: 0.5, stageLabel: 'Waiting for AI Backend (This may take a few seconds)...' });
 
       // Convert Data URL to Blob
       const res = await fetch(imageDataUrl);
       const blob = await res.blob();
       
+      // Extract image pixel dimensions for accurate font metrology DPI calculation
+      const img = new window.Image();
+      img.src = imageDataUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+      
+      const fullDimensions = {
+        ...dimensions,
+        widthPx: img.width,
+        heightPx: img.height,
+      };
+      
       const formData = new FormData();
       formData.append('image', blob, imageName);
       formData.append('productInfoStr', JSON.stringify(productInfo));
-      formData.append('dimensionsStr', JSON.stringify(dimensions));
+      formData.append('dimensionsStr', JSON.stringify(fullDimensions));
 
       const result = await apiFetch('/scan', {
         method: 'POST',
@@ -103,7 +103,6 @@ export default function NewScanPage() {
         // Don't set Content-Type header here, fetch will automatically set it to multipart/form-data with boundary
       });
 
-      clearInterval(progressInterval);
       setProgress({ stage: 'report_generation', progress: 1, stageLabel: 'Report Ready' });
 
       setScanId(result.id);
@@ -115,12 +114,13 @@ export default function NewScanPage() {
   };
 
   const STAGES = [
-    { key: 'preprocessing', label: 'Pre-processing' },
-    { key: 'ocr', label: 'OCR Extraction' },
-    { key: 'classification', label: 'Field Classification' },
-    { key: 'font_analysis', label: 'Font Analysis' },
-    { key: 'rule_evaluation', label: 'Rule Evaluation' },
-    { key: 'report_generation', label: 'Report Generation' },
+    { key: 'preprocessing', label: 'Image Pre-processing (OpenCV deskew & glare reduction)' },
+    { key: 'segmentation', label: 'Computer Vision (YOLOv8 PDP Segmentation)' },
+    { key: 'ocr', label: 'OCR Extraction (Tesseract/Cloud Vision)' },
+    { key: 'classification', label: 'NLP Classification (LayoutLMv3 / IndicBERT)' },
+    { key: 'font_analysis', label: 'Font Metrology Analysis' },
+    { key: 'rule_evaluation', label: 'Rule Engine (Evaluating against LMPC Rules 2011 JSON Schema)' },
+    { key: 'report_generation', label: 'Generating Compliance Report...' },
   ];
 
   return (
@@ -269,7 +269,7 @@ export default function NewScanPage() {
                     </select>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-3)' }}>
                     <div className="form-group">
                       <label className="form-label">Package Shape</label>
                       <select
@@ -285,17 +285,18 @@ export default function NewScanPage() {
                         <option value="other">Other / Irregular</option>
                       </select>
                     </div>
+                  </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Weight (kg)</label>
-                      <input
-                        className="form-input"
-                        type="number"
-                        placeholder="Optional (for exemptions)"
-                        value={productInfo.packageWeightKg || ''}
-                        onChange={(e) => setProductInfo({ ...productInfo, packageWeightKg: parseFloat(e.target.value) || undefined })}
-                      />
-                    </div>
+                  <div style={{ 
+                    padding: 'var(--space-3)', 
+                    background: 'var(--primary-bg)', 
+                    border: '1px solid var(--primary-border)',
+                    borderRadius: 'var(--radius-md)',
+                    marginTop: 'var(--space-2)'
+                  }}>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--primary-600)', margin: 0, fontWeight: 500 }}>
+                      <span style={{ fontWeight: 700 }}>Why do we need dimensions?</span> A flat 2D image doesn't have physical scale. We need physical dimensions to calculate the exact Font Size (in mm) as mandated by LMPC Rule 8. Weight and other details are read automatically by OCR.
+                    </p>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
@@ -355,22 +356,11 @@ export default function NewScanPage() {
               />
             </div>
 
-            <div className="processing-steps">
-              {STAGES.map((stage) => {
-                const stageIdx = STAGES.findIndex((s) => s.key === stage.key);
-                const currentIdx = STAGES.findIndex((s) => s.key === progress?.stage);
-                const isDone = stageIdx < currentIdx;
-                const isActive = stageIdx === currentIdx;
-                return (
-                  <div
-                    key={stage.key}
-                    className={`processing-step ${isDone ? 'done' : isActive ? 'active' : 'pending'}`}
-                  >
-                    {isDone ? <CheckCircle size={16} /> : isActive ? <Loader2 size={16} className="animate-pulse" /> : <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--text-muted)' }} />}
-                    {stage.label}
-                  </div>
-                );
-              })}
+            <div className="processing-steps" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <div className="processing-step active">
+                <Loader2 size={16} className="animate-pulse" />
+                Communicating with YOLOv8 & LayoutLMv3 backend...
+              </div>
             </div>
           </div>
         )}
@@ -396,7 +386,7 @@ export default function NewScanPage() {
               <button className="btn btn-primary btn-lg" onClick={() => navigate(`/report/${scanId}`)}>
                 View Report <ArrowRight size={18} />
               </button>
-              <button className="btn btn-secondary" onClick={() => { setStep('upload'); setImageDataUrl(''); setUseDemo(false); }}>
+              <button className="btn btn-secondary" onClick={() => { setStep('upload'); setImageDataUrl(''); }}>
                 Scan Another
               </button>
             </div>

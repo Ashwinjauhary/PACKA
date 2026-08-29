@@ -10,14 +10,16 @@ export default function RegisterPage() {
     full_name: '',
     email: '',
     password: '',
-    confirm_password: ''
+    confirm_password: '',
+    role: 'officer'
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -42,15 +44,18 @@ export default function RegisterPage() {
           username: formData.email,
           password: formData.password,
           organization_name: formData.organization_name,
-          full_name: formData.full_name
+          name: formData.full_name,
+          role: formData.role
         })
       });
       
-      // Navigate to login after successful registration
-      navigate('/login');
+      // Show success message and wait before redirecting
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -67,6 +72,24 @@ export default function RegisterPage() {
           </div>
         )}
         
+        <div className="form-group">
+          <label className="form-label" htmlFor="role">User Role</label>
+          <select
+            id="role"
+            name="role"
+            required
+            className="form-input"
+            value={formData.role}
+            onChange={handleChange}
+            style={{ backgroundColor: '#fff' }}
+          >
+            <option value="officer">Legal Metrology Officer (LMO)</option>
+            <option value="ecommerce">E-Commerce Compliance Partner</option>
+            <option value="manufacturer">Manufacturer / Packer</option>
+            <option value="admin">System Administrator</option>
+          </select>
+        </div>
+
         <div className="form-group">
           <label className="form-label" htmlFor="organization_name">{t('register.org')}</label>
           <input
@@ -139,11 +162,11 @@ export default function RegisterPage() {
         
         <button
           type="submit"
-          disabled={loading}
-          className="btn btn-primary"
+          disabled={loading || success}
+          className={`btn ${success ? 'btn-success' : 'btn-primary'}`}
           style={{ width: '100%', justifyContent: 'center', marginTop: 'var(--space-2)' }}
         >
-          {loading ? t('register.loading') : t('register.btn')}
+          {success ? 'Account Created Successfully! Redirecting...' : loading ? t('register.loading') : t('register.btn')}
         </button>
 
         <div className="auth-footer">

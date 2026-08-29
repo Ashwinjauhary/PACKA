@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
   const { t } = useLanguage();
@@ -25,13 +26,20 @@ export default function LoginPage() {
         body: JSON.stringify({ username: email, password })
       });
       
+      setSuccess(true);
       login(data.token, data.user);
-      navigate('/dashboard');
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
-    } finally {
       setLoading(false);
     }
+  };
+
+  const handleGovtSSO = (e: React.MouseEvent) => {
+    e.preventDefault();
+    alert('Parichay / MeriPehchaan SSO integration requires government API credentials and is scheduled for Phase 2. Please use standard email/password login for now.');
   };
 
   return (
@@ -74,14 +82,27 @@ export default function LoginPage() {
         
         <button
           type="submit"
-          disabled={loading}
-          className="btn btn-primary"
+          disabled={loading || success}
+          className={`btn ${success ? 'btn-success' : 'btn-primary'}`}
           style={{ width: '100%', justifyContent: 'center', marginTop: 'var(--space-2)' }}
         >
-          {loading ? t('login.loading') : t('login.btn')}
+          {success ? 'Login Successful! Redirecting...' : loading ? t('login.loading') : t('login.btn')}
         </button>
 
-        <div className="auth-footer">
+        <div style={{ textAlign: 'center', margin: '15px 0', color: '#666', fontSize: '0.85rem' }}>
+          — OR —
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGovtSSO}
+          className="btn btn-outline"
+          style={{ width: '100%', justifyContent: 'center', borderColor: '#004B87', color: '#004B87' }}
+        >
+          Login with Parichay / MeriPehchaan (SSO)
+        </button>
+
+        <div className="auth-footer" style={{ marginTop: '20px' }}>
           {t('login.noAccount')} <Link to="/register" className="text-blue-800 hover:underline">{t('login.registerLink')}</Link>
         </div>
         

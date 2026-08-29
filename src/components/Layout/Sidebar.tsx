@@ -78,7 +78,11 @@ export default function Sidebar() {
           </div>
           <div className="user-info">
             <div className="user-name">{user?.name || 'LMPC Officer'}</div>
-            <div className="user-role">{user?.role || 'Admin'}</div>
+            <div className="user-role" style={{ textTransform: 'capitalize' }}>
+              {user?.role === 'ecommerce' ? 'E-Commerce' : 
+               user?.role === 'officer' ? 'LMO' : 
+               user?.role || 'Admin'}
+            </div>
           </div>
           <button 
             onClick={handleLogout}

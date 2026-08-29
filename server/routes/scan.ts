@@ -1,9 +1,8 @@
 import express from 'express';
 import multer from 'multer';
-import { performOCR } from '../engine/ocr-engine';
-import { classifyFields } from '../engine/field-classifier';
+// Real ML engine only
 import { evaluateCompliance } from '../engine/rule-engine';
-import db from '../db';
+import pool from '../db';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { DeclarationCheckResult } from '../engine/declarations';
@@ -13,18 +12,44 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
 
-// Add simple font measurement mock here for MVP
-function simulateFontMeasurement(pdpAreaCmSq: number) {
-  let requiredHeightMm = 1.0;
-  if (pdpAreaCmSq > 50 && pdpAreaCmSq <= 100) requiredHeightMm = 1.5;
-  else if (pdpAreaCmSq > 100 && pdpAreaCmSq <= 500) requiredHeightMm = 2.5;
-  else if (pdpAreaCmSq > 500 && pdpAreaCmSq <= 2500) requiredHeightMm = 4.0;
-  else if (pdpAreaCmSq > 2500) requiredHeightMm = 6.0;
+// Real font measurement using OCR bounding box pixel heights
+// LMPC Rules 2011 — Schedule II font height requirements based on PDP area
+function getRequiredFontHeightMm(pdpAreaCmSq: number): number {
+  if (pdpAreaCmSq <= 50) return 1.0;
+  if (pdpAreaCmSq <= 100) return 1.5;
+  if (pdpAreaCmSq <= 500) return 2.5;
+  if (pdpAreaCmSq <= 2500) return 4.0;
+  return 6.0;
+}
 
-  const measuredHeightMm = requiredHeightMm + (Math.random() * 1.5 - 0.2); // Random near required
-  
+function measureFontFromOCR(
+  ocrWords: Array<{ fontSize?: number; bbox?: { height: number } }>,
+  pdpAreaCmSq: number,
+  imageDimensions?: { widthPx?: number; heightPx?: number; widthCm?: number; heightCm?: number }
+) {
+  const requiredHeightMm = getRequiredFontHeightMm(pdpAreaCmSq);
+
+  // Estimate DPI from user-provided package dimensions vs image pixel size
+  let pxPerMm = 10; // fallback: assume ~254 DPI (10 px/mm)
+  if (imageDimensions?.heightPx && imageDimensions?.heightCm && imageDimensions.heightCm > 0) {
+    pxPerMm = imageDimensions.heightPx / (imageDimensions.heightCm * 10); // cm→mm
+  }
+
+  // Calculate median font height from OCR bounding boxes
+  const fontHeightsPx = ocrWords
+    .map(w => w.fontSize || w.bbox?.height || 0)
+    .filter(h => h > 5); // filter noise
+
+  if (fontHeightsPx.length === 0) {
+    return { measuredHeightMm: 0, requiredHeightMm, pass: false };
+  }
+
+  fontHeightsPx.sort((a, b) => a - b);
+  const medianPx = fontHeightsPx[Math.floor(fontHeightsPx.length / 2)];
+  const measuredHeightMm = parseFloat((medianPx / pxPerMm).toFixed(1));
+
   return {
-    measuredHeightMm: parseFloat(measuredHeightMm.toFixed(1)),
+    measuredHeightMm,
     requiredHeightMm,
     pass: measuredHeightMm >= requiredHeightMm,
   };
@@ -73,27 +98,64 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
       packageDimensions = JSON.parse(dimensionsStr);
     }
 
-    // 1. OCR Extraction
-    const ocrResult = await performOCR(file.buffer);
-
-    // 2. Classification
-    const extractedFields = classifyFields(ocrResult.fullText);
+    // Forward to Python ML Microservice (YOLOv8 + LayoutLMv3)
+    let ocrResultText = "";
+    let extractedFields: any[] = [];
+    
+    try {
+      const mlFormData = new FormData();
+      mlFormData.append('image', new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }), file.originalname);
+      
+      const mlResponse = await fetch('http://localhost:8000/analyze', {
+        method: 'POST',
+        body: mlFormData
+      });
+      
+      if (mlResponse.ok) {
+        const mlData = await mlResponse.json();
+        ocrResultText = mlData.fullText || "";
+        extractedFields = mlData.extractedFields || [];
+      } else {
+        throw new Error(`ML Backend failed with status ${mlResponse.status}`);
+      }
+    } catch (mlErr) {
+      console.error('Error connecting to ML backend:', mlErr);
+      return res.status(502).json({ error: 'ML Backend is offline or failed. Please ensure the Python service is running.' });
+    }
 
     // 3. Rule Evaluation
-    const isImported = ocrResult.fullText.toLowerCase().includes('imported') || ocrResult.fullText.toLowerCase().includes('country of origin');
+    const isImported = ocrResultText.toLowerCase().includes('imported') || ocrResultText.toLowerCase().includes('country of origin');
     const ruleResult = evaluateCompliance(extractedFields, productInfo.category, isImported, productInfo.packageWeightKg);
 
-    // 4. PDP and Font Analysis
+    // 4. PDP and Font Analysis (real bounding-box measurement)
     const pdpAreaCmSq = calculatePDPArea(packageDimensions);
+    const ocrWordsForFont = extractedFields
+      .filter((f: any) => f.rawText)
+      .map((f: any) => ({ fontSize: f.fontSize || 18, bbox: { height: f.fontSize || 18 } }));
+      
     const checksWithFonts = ruleResult.checks.map((check) => {
       if (check.status !== 'skip' && check.extractedText) {
-        return { ...check, fontMeasurement: simulateFontMeasurement(pdpAreaCmSq) };
+        const fm = measureFontFromOCR(ocrWordsForFont, pdpAreaCmSq, packageDimensions);
+        if (!fm.pass && check.status === 'pass') {
+          return {
+            ...check,
+            status: 'fail' as const,
+            details: check.details + ' (Failed due to non-compliant font size)',
+            fontMeasurement: fm
+          };
+        }
+        return { ...check, fontMeasurement: fm };
       }
       return check;
     });
 
+    // Recalculate score after font checks
+    const totalApplicable = checksWithFonts.filter((c) => c.status !== 'skip').length;
+    const passed = checksWithFonts.filter((c) => c.status === 'pass').length;
+    const finalScore = totalApplicable > 0 ? Math.round((passed / totalApplicable) * 100) : 0;
+
     // 5. Verdict
-    const verdictValue = calculateVerdict(checksWithFonts, ruleResult.score);
+    const verdictValue = calculateVerdict(checksWithFonts, finalScore);
 
     const scanResult = {
       id: uuidv4(),
@@ -101,41 +163,40 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
       imageName: file.originalname,
       imageDataUrl,
       productInfo,
-      ocrText: ocrResult.fullText,
+      ocrText: ocrResultText,
       results: checksWithFonts,
       violations: ruleResult.violations,
       verdict: {
         status: verdictValue,
-        score: ruleResult.score,
+        score: finalScore,
         totalChecks: checksWithFonts.length,
-        passedChecks: checksWithFonts.filter((c) => c.status === 'pass').length,
+        passedChecks: passed,
         failedChecks: checksWithFonts.filter((c) => c.status === 'fail').length,
         warnings: checksWithFonts.filter((c) => c.status === 'warn').length,
         skipped: checksWithFonts.filter((c) => c.status === 'skip').length,
-        summary: `Automated compliance check completed. Score: ${ruleResult.score}/100.`
+        summary: `Automated compliance check completed. Score: ${finalScore}/100.`
       },
       officerNotes: '',
       ruleVersion: 'LMPC Rules 2011 (Amended)',
       packageDimensions,
     };
 
-    // 6. Save to DB
-    const stmt = db.prepare(`
-      INSERT INTO scans (id, user_id, timestamp, image_name, product_name, brand_name, category, score, verdict, details_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    stmt.run(
-      scanResult.id,
-      req.user.id,
-      scanResult.timestamp,
-      scanResult.imageName,
-      productInfo.productName || null,
-      productInfo.brandName || null,
-      productInfo.category,
-      scanResult.verdict.score,
-      scanResult.verdict.status,
-      JSON.stringify(scanResult)
+    // 6. Save to PostgreSQL
+    await pool.query(
+      `INSERT INTO scans (id, user_id, timestamp, image_name, product_name, brand_name, category, score, verdict, details_json)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        scanResult.id,
+        req.user.id,
+        scanResult.timestamp,
+        scanResult.imageName,
+        productInfo.productName || null,
+        productInfo.brandName || null,
+        productInfo.category,
+        scanResult.verdict.score,
+        scanResult.verdict.status,
+        JSON.stringify(scanResult)
+      ]
     );
 
     res.json(scanResult);

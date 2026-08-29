@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { User } from '../types/user';
-import { apiFetch } from './api';
+import { apiFetch } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;

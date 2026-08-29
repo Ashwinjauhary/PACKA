@@ -1,35 +1,41 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import db from '../db';
+import pool from '../db';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development_only';
 
-router.post('/register', (req, res) => {
-  const { username, password, name } = req.body;
+router.post('/register', async (req, res) => {
+  const { username, password, name, role } = req.body;
   
   if (!username || !password || !name) {
     return res.status(400).json({ error: 'All fields are required' });
   }
+  
+  const userRole = role || 'officer';
 
   try {
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const stmt = db.prepare('INSERT INTO users (username, password, name) VALUES (?, ?, ?)');
-    const info = stmt.run(username, hashedPassword, name);
+    const result = await pool.query(
+      'INSERT INTO users (username, password, name, role) VALUES ($1, $2, $3, $4) RETURNING id',
+      [username, hashedPassword, name, userRole]
+    );
     
-    const token = jwt.sign({ id: info.lastInsertRowid, username, name, role: 'officer' }, JWT_SECRET, { expiresIn: '24h' });
+    const userId = result.rows[0].id;
+    const token = jwt.sign({ id: userId, username, name, role: userRole }, JWT_SECRET, { expiresIn: '24h' });
     
-    res.json({ token, user: { id: info.lastInsertRowid, username, name, role: 'officer' } });
+    res.json({ token, user: { id: userId, username, name, role: userRole } });
   } catch (error: any) {
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    if (error.code === '23505') { // PostgreSQL unique violation
       return res.status(400).json({ error: 'Username already exists' });
     }
+    console.error('Registration error:', error);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   
   if (!username || !password) {
@@ -37,8 +43,8 @@ router.post('/login', (req, res) => {
   }
 
   try {
-    const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-    const user = stmt.get(username) as any;
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = result.rows[0];
 
     if (!user || !bcrypt.compareSync(password, user.password)) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -48,6 +54,7 @@ router.post('/login', (req, res) => {
     
     res.json({ token, user: { id: user.id, username: user.username, name: user.name, role: user.role } });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Database error' });
   }
 });

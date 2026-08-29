@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ScanFilter, ScanRecord } from '../types/scan';
 import { apiFetch } from '../lib/api';
 import {
@@ -15,6 +15,9 @@ import {
 
 export default function HistoryPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialSearchQuery = searchParams.get('q') || '';
+  
   const [allScans, setAllScans] = useState<ScanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,12 +39,20 @@ export default function HistoryPage() {
   }, []);
 
   const [filters, setFilters] = useState<ScanFilter>({
-    searchQuery: '',
+    searchQuery: initialSearchQuery,
     dateFrom: '',
     dateTo: '',
     verdict: '',
     category: '',
   });
+
+  // Keep filters updated if URL changes
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q !== null && q !== filters.searchQuery) {
+      setFilters(prev => ({ ...prev, searchQuery: q }));
+    }
+  }, [searchParams]);
 
   const filteredScans = useMemo(() => {
     let scans = allScans;
@@ -66,9 +77,13 @@ export default function HistoryPage() {
   }, [allScans, filters]);
 
   const handleDelete = async (id: string) => {
-    // For MVP, we aren't implementing delete on backend yet, but we'll mock it
-    if (confirm('Delete this scan record? (Mocked)')) {
-      setAllScans((prev) => prev.filter((s) => s.id !== id));
+    if (confirm('Are you sure you want to delete this scan record?')) {
+      try {
+        await apiFetch(`/scans/${id}`, { method: 'DELETE' });
+        setAllScans((prev) => prev.filter((s) => s.id !== id));
+      } catch (err: any) {
+        alert(`Failed to delete scan: ${err.message}`);
+      }
     }
   };
 

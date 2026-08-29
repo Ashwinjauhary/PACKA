@@ -23,8 +23,8 @@ export function evaluateCompliance(
   const violations: RuleViolation[] = [];
 
   // Get category config
-  const categoryConfig = lmpcRules.categories.find((c) => c.id === category)
-    || lmpcRules.categories.find((c) => c.id === 'general')!;
+  const categoryConfig = lmpcRules.categories.find((c: any) => c.id === category)
+    || lmpcRules.categories.find((c: any) => c.id === 'general')!;
 
   const requiredFields = new Set(categoryConfig.requiredFields);
   const conditionalFields = new Set(categoryConfig.conditionalFields);
@@ -34,7 +34,7 @@ export function evaluateCompliance(
 
   for (const field of DECLARATION_FIELDS) {
     const extracted = extractedFields.find((e) => e.fieldType === field.type);
-    const rule = lmpcRules.rules.find((r) => r.field === field.type);
+    const rule = lmpcRules.rules.find((r: any) => r.field === field.type);
 
     if (!rule || !rule.active) {
       checks.push({

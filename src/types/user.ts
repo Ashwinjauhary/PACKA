@@ -1,6 +1,6 @@
 // User and authentication types
 
-export type UserRole = 'officer' | 'supervisor' | 'admin';
+export type UserRole = 'officer' | 'supervisor' | 'admin' | 'manufacturer' | 'ecommerce';
 
 export interface User {
   id: string;
@@ -12,32 +12,3 @@ export interface User {
   district: string;
 }
 
-export const DEMO_USERS: User[] = [
-  {
-    id: 'officer-001',
-    name: 'Rajesh Kumar',
-    role: 'officer',
-    email: 'rajesh.kumar@legalmetrology.gov.in',
-    department: 'Legal Metrology',
-    state: 'Maharashtra',
-    district: 'Mumbai',
-  },
-  {
-    id: 'supervisor-001',
-    name: 'Priya Sharma',
-    role: 'supervisor',
-    email: 'priya.sharma@legalmetrology.gov.in',
-    department: 'Legal Metrology',
-    state: 'Maharashtra',
-    district: '',
-  },
-  {
-    id: 'admin-001',
-    name: 'Amit Verma',
-    role: 'admin',
-    email: 'amit.verma@doca.gov.in',
-    department: 'DoCA',
-    state: '',
-    district: '',
-  },
-];

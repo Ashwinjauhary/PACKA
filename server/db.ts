@@ -1,7 +1,11 @@
 import { Pool } from 'pg';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/packa';
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/packa',
+  connectionString,
+  ssl: connectionString.includes('supabase.co') ? { rejectUnauthorized: false } : false
 });
 
 // Initialize tables

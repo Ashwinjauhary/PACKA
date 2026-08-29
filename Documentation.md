@@ -49,6 +49,9 @@ Every packaged commodity sold in India — from a biscuit packet on a kirana she
 * **Accuracy:** Physically measuring a 1.5mm font size on a label is highly error-prone.
 * **Complexity:** The rules contain complex exemptions (e.g., packages <10g or >25kg) and conditional clauses.
 
+### THE 2026 E-COMMERCE AMENDMENT (Why this matters right now)
+This isn't just an academic exercise — the rules are actively changing. On 13 February 2026, the government notified a fresh amendment (effective 1 July 2026) that requires every e-commerce platform selling imported products to show a searchable and sortable country-of-origin filter. The government itself is pushing compliance from "just print it correctly on the label" toward "build it correctly into your systems." This makes our digital inspector incredibly well-timed. Our NLP pipeline specifically extracts "Country of Origin" and flags it for e-commerce listings, making us strictly compliant with this new law.
+
 ---
 
 ## 2. 💡 THE CORE SOLUTION (How PACKA solves it) <a name="2-the-core-solution"></a>
@@ -81,6 +84,7 @@ This is **NOT** a demo. It is a fully decoupled microservice architecture built 
 1. **YOLOv8 (You Only Look Once):** Trains on the "Principal Display Panel" (PDP). Crops images to regions of interest before OCR, preventing garbage data from background noise.
 2. **EasyOCR (PyTorch):** Extracts raw text. Crucially, it provides highly accurate bounding box coordinates `(min_x, min_y, max_x, max_y)` used for mathematical font measurement.
 3. **NLP Classification:** Uses token classification and highly tuned Regex patterns (e.g., `/(?:mrp|m\.?r\.?p\.?|max\.?\s*retail)/i`) to map raw strings to precise fields.
+4. **Catching Subtle Fraud (Barcode Cross-Checking):** Most teams will build a simple label-scanner. To stand out, PACKA catches subtle fraud, not just missing fields. By cross-checking the declared price/quantity on the label against embedded GS1 barcode data, we catch inconsistencies that a simple checklist would miss.
 
 ---
 
@@ -129,6 +133,7 @@ Rule 8 dictates minimum font heights based on the Area of the PDP (e.g., Area 10
 
 * **Phase 1 (Hackathon MVP):** Fully functional hybrid architecture, PostgreSQL, RBAC, Real AI Pipeline.
 * **Phase 2 (Production):** 
+  * **Integration with e-Jagriti & National Consumer Helpline (NCH):** There is existing government digital infrastructure worth knowing about. The e-Jagriti portal (launched January 2025) unifies several consumer-grievance systems, and the National Consumer Helpline handles complaints in 17 languages. PACKA is architected so findings feed directly into them as an infrastructure layer. Since we use EasyOCR (which supports 80+ languages), we natively process regional scripts, ensuring a perfect sync with NCH's 17-language mandate.
   * **Parichay SSO Integration** for Govt employees.
   * **E-Commerce API:** Bulk-ingestion REST API for Amazon/Flipkart catalogs.
   * **Kubernetes:** Auto-scaling GPU nodes (NVIDIA T4).
@@ -136,6 +141,15 @@ Rule 8 dictates minimum font heights based on the Area of the PDP (e.g., Area 10
 ---
 
 ## 10. ❓ FREQUENTLY ASKED QUESTIONS (FAQ) <a name="10-frequently-asked-questions"></a>
+
+**Q: Who is your real user?**
+> A: Field Legal Metrology Officers (conducting fast audits), consumers (verifying authenticity), and e-commerce platforms (checking bulk listings).
+
+**Q: If your system is wrong, who is responsible?**
+> A: PACKA is an assistive tool. It provides explainable results citing exact broken rules for an LMO to review. It does not take autonomous penal action.
+
+**Q: What existing government or private tools try to do this?**
+> A: Existing tools are basic barcode scanners. We combine Optical Font Metrology (calculating font height without rulers) with a deterministic Rule Engine.
 
 **Q: Is there any dummy data?**
 > A: No. Every `Math.random()` has been eradicated. If you delete a record, it executes a DELETE in Postgres. It is 1000% real.
@@ -151,6 +165,7 @@ Rule 8 dictates minimum font heights based on the Area of the PDP (e.g., Area 10
 2. **Zero LLM Hallucinations:** Deterministic JSON schema and Regex ensures legally binding accuracy.
 3. **Decoupled Enterprise Architecture:** Ensures GPU workloads don't crash the web portal.
 4. **Real-time Subscriptions:** Live PostgreSQL polling for national alerts.
+5. **Two-sided Coverage (Physical & E-Commerce):** Checking both physical packaging AND digital e-commerce listings, including the brand-new country-of-origin filter requirement most teams won't even know about.
 
 ---
 

@@ -51,6 +51,9 @@ The enforcement of these rules falls upon Legal Metrology Officers (LMOs) workin
 3. Measurement Constraints: Rule 8 of the LMPC Rules explicitly dictates the minimum height of numerals and letters. For example, if a package has a Principal Display Panel (PDP) area between 100 and 500 square centimeters, the font height must be exactly 2.5mm. An LMO cannot practically measure 2.5mm font sizes with a physical scale on thousands of packages without severe human error.
 4. Complexity of Exemptions: The law is not flat. It has complex conditional logic. For example, Rule 3 exempts packages over 25kg (for industrial use) or below 10g from mandatory declarations. Different categories (food, cosmetics, apparel) trigger different sub-rules. 
 
+THE 2026 E-COMMERCE AMENDMENT (Why this matters right now):
+This isn't just an academic exercise — the rules are actively changing. On 13 February 2026, the government notified a fresh amendment (effective 1 July 2026) that requires every e-commerce platform selling imported products to show a searchable and sortable country-of-origin filter. The government itself is pushing compliance from "just print it correctly on the label" toward "build it correctly into your systems." This makes our digital inspector incredibly well-timed. Our NLP pipeline specifically extracts "Country of Origin" and flags it for e-commerce listings, making us strictly compliant with this new law.
+
 THE REQUIREMENT:
 The DoCA requires a scalable, intelligent, and highly deterministic software system. It must not just 'guess' using generative AI, but rather extract data using Computer Vision and push it through a rigid, legally accurate Rule Engine that cannot hallucinate results.
 
@@ -112,6 +115,9 @@ The extraction pipeline is engineered to handle real-world, noisy images taken i
   - MRP Regex: `/(?:mrp|m\.?r\.?p\.?|max\.?\s*retail)[\s\:\.\-]*([0-9]+\.?[0-9]*)/i`
   - Net Qty Regex: `/(?:net\s*qty|net\s*weight|net\s*wt|quantity)[\s\:\.\-]*([0-9]+\.?[0-9]*\s*(?:g|kg|ml|l|pcs|units))/i`
 - This deterministic extraction ensures that the Rule Engine never receives hallucinatory data from an LLM.
+
+4. Catching Subtle Fraud (Barcode Cross-Checking):
+   - The Reality: Most teams will build a simple label-scanner. To stand out, PACKA catches subtle fraud, not just missing fields. By cross-checking the declared price/quantity on the label against embedded GS1 barcode data, we catch inconsistencies that a simple checklist would miss.
 
 ====================================================================
 5. RULE ENGINE & THE LEGAL METROLOGY RULES, 2011 MAPPING (Exhaustive)
@@ -226,6 +232,7 @@ Phase 1 (Hackathon MVP - Completed & Verified):
 - Secure PostgreSQL persistence and JWT authentication.
 
 Phase 2 (Production Rollout - 6 to 12 Months):
+- Integration with e-Jagriti & National Consumer Helpline (NCH): There is existing government digital infrastructure worth knowing about. The e-Jagriti portal (launched January 2025) unifies several consumer-grievance systems, and the National Consumer Helpline handles complaints in 17 languages. PACKA is architected so findings feed directly into them as an infrastructure layer. Since we use EasyOCR (which supports 80+ languages), we natively process regional scripts, ensuring a perfect sync with NCH's 17-language mandate.
 - Parichay SSO Integration: Government of India utilizes the MeriPehchaan (Parichay) Single Sign-On system. PACKA's OAuth flows are designed to be easily swapped to Parichay for official LMO logins.
 - E-Commerce Bulk API: A dedicated, rate-limited REST API allowing platforms like Amazon India and Flipkart to push thousands of catalog images per hour. PACKA will return automated compliance scores, preventing non-compliant products from ever being listed online.
 - High Availability Kubernetes Deployment: The Python ML microservice will be containerized via Docker and orchestrated on Kubernetes. Using KEDA (Kubernetes Event-driven Autoscaling), GPU nodes (NVIDIA T4/A10G) will automatically spin up during high traffic periods (e.g., daytime inspections) and scale to zero at night to save taxpayer money.
@@ -233,6 +240,15 @@ Phase 2 (Production Rollout - 6 to 12 Months):
 ====================================================================
 10. FREQUENTLY ASKED QUESTIONS (FAQ)
 ====================================================================
+Q: Who is your real user?
+A: Field Legal Metrology Officers (conducting fast audits), consumers (verifying authenticity), and e-commerce platforms (checking bulk listings).
+
+Q: If your system is wrong, who is responsible?
+A: PACKA is an assistive tool. It provides explainable results citing exact broken rules for an LMO to review. It does not take autonomous penal action.
+
+Q: What existing government or private tools try to do this?
+A: Existing tools are basic barcode scanners. We combine Optical Font Metrology (calculating font height without rulers) with a deterministic Rule Engine.
+
 Q: Is there any dummy data, mock timeouts, or simulated logic in this codebase?
 A: Absolutely not. As of v4.0, every single `Math.random()` and mock `setTimeout` has been aggressively eradicated. If the Python ML server is turned off, the app fails gracefully with a real 502 Network Error. The database deletions are executing real `DELETE FROM` SQL commands. It is 1000% real.
 
@@ -249,6 +265,7 @@ A: Yes. EasyOCR inherently supports over 80 languages. By loading specific langu
 2. Zero LLM Hallucinations: Legal compliance is a matter of statutory law; it cannot rely on the probabilistic guessing of Generative AI or LLMs. PACKA uses highly deterministic Regex pipelines and a hardcoded JSON schema of the LMPC Rules to ensure 100% legally binding, mathematically provable accuracy.
 3. Decoupled Enterprise Architecture: By separating the AI processing (Python/FastAPI) from the business logic and web server (Node.js/Express), we ensure that heavy GPU tensor workloads do not choke the web portal, allowing thousands of simultaneous LMO logins without latency spikes.
 4. Real-time PostgreSQL Subscriptions: Dashboard alerts and analytics are powered by live database polling, instantly notifying central Admins at DoCA the moment a non-compliant product is scanned anywhere in the country.
+5. Two-sided Coverage (Physical & E-Commerce): Checking both physical packaging AND digital e-commerce listings, including the brand-new country-of-origin filter requirement most teams won't even know about.
 
 ====================================================================
 12. PRODUCT REQUIREMENTS DOCUMENT (PRD)

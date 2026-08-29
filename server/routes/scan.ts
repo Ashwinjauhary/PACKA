@@ -1,5 +1,7 @@
 import express from 'express';
 import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 // Real ML engine only
 import { evaluateCompliance } from '../engine/rule-engine';
 import pool from '../db';
@@ -67,8 +69,9 @@ function calculatePDPArea(dimensions: any): number {
 }
 
 function calculateVerdict(checks: DeclarationCheckResult[], score: number) {
+  // If a check failed, it was required (since non-applicable conditionals are marked 'skip')
   const failedMandatory = checks.filter(
-    (c) => c.status === 'fail' && !c.ruleClause.includes('conditional')
+    (c) => c.status === 'fail'
   ).length;
 
   if (failedMandatory > 0 || score < 70) {
@@ -85,7 +88,12 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
     if (!file) {
       return res.status(400).json({ error: 'Image file is required' });
     }
-    const imageDataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    
+    // Save image to disk instead of bloating DB with base64
+    const filename = `${uuidv4()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const uploadPath = path.join(__dirname, '../uploads', filename);
+    fs.writeFileSync(uploadPath, file.buffer);
+    const imageUrl = `/uploads/${filename}`;
 
     const { productInfoStr, dimensionsStr } = req.body;
     let productInfo = { category: 'general', productName: '', brandName: '', packageWeightKg: undefined };
@@ -124,7 +132,8 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
     }
 
     // 3. Rule Evaluation
-    const isImported = ocrResultText.toLowerCase().includes('imported') || ocrResultText.toLowerCase().includes('country of origin');
+    const ocrLower = ocrResultText.toLowerCase();
+    const isImported = /imported\s+(?:by|and|&|marketing|marketed)|country\s+of\s+origin/i.test(ocrLower);
     const ruleResult = evaluateCompliance(extractedFields, productInfo.category, isImported, productInfo.packageWeightKg);
 
     // 4. PDP and Font Analysis (real bounding-box measurement)
@@ -161,7 +170,7 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
       id: uuidv4(),
       timestamp: new Date().toISOString(),
       imageName: file.originalname,
-      imageDataUrl,
+      imageUrl,
       productInfo,
       ocrText: ocrResultText,
       results: checksWithFonts,

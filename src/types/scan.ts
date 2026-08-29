@@ -8,6 +8,7 @@ export interface ScanRecord {
   timestamp: string;
   imageDataUrl: string;  // base64 data URL for MVP (localStorage)
   imageName: string;
+  imageUrl?: string;
   productInfo: ProductInfo;
   ocrText: string;
   results: DeclarationCheckResult[];

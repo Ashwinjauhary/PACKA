@@ -7,7 +7,12 @@ from typing import Dict, Any, List
 try:
     reader = easyocr.Reader(['en', 'hi', 'mr', 'ta', 'bn'])
 except Exception as e:
-    reader = None
+    print("Warning: Failed to initialize multi-language EasyOCR, falling back to English only.", e)
+    try:
+        reader = easyocr.Reader(['en'])
+    except Exception as fallback_e:
+        print("Error initializing EasyOCR entirely:", fallback_e)
+        reader = None
 
 # Initialize Transformers NER
 try:

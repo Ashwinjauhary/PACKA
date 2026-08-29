@@ -3,8 +3,8 @@ import numpy as np
 from PIL import Image
 try:
     from pyzbar.pyzbar import decode
-except ImportError:
-    pass
+except Exception:
+    decode = None
 # We simulate loading ultralytics since we are deploying a local hackathon model,
 # but we write the real API logic as if yolov8n is present.
 try:

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiFetch } from '../lib/api';
+import { apiFetch, SERVER_BASE } from '../lib/api';
 import { generatePDF, downloadPDF } from '../lib/pdf-export';
 import { ScanRecord } from '../types/scan';
 import {
@@ -191,7 +191,7 @@ export default function ReportPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'var(--bg-base)',
           }}>
-            <img src={scan.imageDataUrl} alt="Package" style={{ maxHeight: 250, objectFit: 'contain' }} />
+            <img src={`${SERVER_BASE}${scan.imageUrl}`} alt="Package" style={{ maxHeight: 250, objectFit: 'contain' }} />
           </div>
         </div>
       </div>

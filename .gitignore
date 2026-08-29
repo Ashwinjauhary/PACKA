@@ -4,3 +4,5 @@ dist/
 ml-backend/venv/
 ml-backend/__pycache__/
 *.pyc
+server/uploads/  
+ 

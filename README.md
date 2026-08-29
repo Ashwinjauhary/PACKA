@@ -15,7 +15,7 @@
 1. [Executive Summary & The Problem (Deep Dive)](#1-executive-summary--the-problem-deep-dive)
 2. [The Core Solution & Workflow Mechanics](#2-the-core-solution--workflow-mechanics)
 3. [1000% Real Production Architecture (Node.js + Python + PostgreSQL)](#3-1000-real-production-architecture-nodejs--python--postgresql)
-4. [AI/ML Deep Dive (YOLOv8 + EasyOCR + LayoutLMv3)](#4-aiml-deep-dive-yolov8--easyocr--layoutlmv3)
+4. [AI/ML Deep Dive (YOLOv8 + EasyOCR + Transformers NER)](#4-aiml-deep-dive-yolov8--easyocr--transformers-ner)
 5. [Rule Engine & The Legal Metrology Rules, 2011 Mapping (Exhaustive)](#5-rule-engine--the-legal-metrology-rules-2011-mapping-exhaustive)
 6. [Database Schema, Data Flow & Security (PostgreSQL)](#6-database-schema-data-flow--security-postgresql)
 7. [Font Metrology (Mathematical DPI & BBox logic Explained)](#7-font-metrology-mathematical-dpi--bbox-logic-explained)
@@ -69,7 +69,7 @@ The DoCA requires a scalable, intelligent, and highly deterministic software sys
 3. **INTELLIGENT EXTRACTION:** 
    - Instead of running generic OCR, PACKA uses a YOLOv8 object detection model specifically trained to identify the "Principal Display Panel" (the main label).
    - Once cropped, EasyOCR (a PyTorch based Optical Character Recognition engine) extracts the text strings along with their spatial bounding box coordinates (X, Y coordinates of the text on the image).
-4. **SEMANTIC UNDERSTANDING:** LayoutLMv3 (and advanced Regex pattern matching) parses the raw strings to figure out that "₹ 150.00 (USP 1.50/g)" actually maps to the JSON key `mrp` and `unit_sale_price`.
+4. **SEMANTIC UNDERSTANDING:** Transformers NER (with a LayoutLMv3-style semantic role in the pipeline) and advanced Regex pattern matching parses the raw strings to figure out that "₹ 150.00 (USP 1.50/g)" actually maps to the JSON key `mrp` and `unit_sale_price`.
 5. **DETERMINISTIC EVALUATION:** The Node.js Rule Engine takes this structured JSON and runs it against a hardcoded digital twin of the LMPC Rules. It checks for missing fields, calculates whether the font size is legally valid, and checks if the MRP math is correct.
 6. **IMMUTABLE REPORTING:** The backend saves the entire audit trail in a PostgreSQL database as JSONB, and the frontend generates a NIC-styled, downloadable PDF notice that can be legally served to a non-compliant manufacturer.
 
@@ -100,7 +100,7 @@ To win SIH, a project cannot be a mocked prototype. PACKA is built using a stric
 
 ---
 
-## 4. AI/ML DEEP DIVE (YOLOv8 + EasyOCR + LayoutLMv3)
+## 4. AI/ML DEEP DIVE (YOLOv8 + EasyOCR + Transformers NER)
 
 The extraction pipeline is engineered to handle real-world, noisy images taken in poorly lit kirana stores.
 
@@ -112,7 +112,7 @@ The extraction pipeline is engineered to handle real-world, noisy images taken i
    - *Why EasyOCR?:* Unlike traditional OCRs, EasyOCR provides exact spatial bounding boxes `[min_x, min_y, max_x, max_y]` for every single word it detects. 
    - *Metrology Dependency:* We absolutely need these spatial coordinates. Without knowing exactly how many pixels tall the word "MRP" is in the image, we cannot perform our Rule 8 Font Metrology math.
 
-3. **NLP Classification (Regex + LayoutLMv3 Fallback):**
+3. **NLP Classification (Regex + Transformers NER Fallback):**
    - *The Challenge:* OCR returns a flat array of strings like `["Packer:", "Hindustan", "Unilever", "Rs.", "45"]`. How does the computer know "45" is the MRP?
    - *The Pipeline:* We utilize highly aggressive Regular Expressions tuned specifically for Indian packaging. 
      - MRP Regex: `/(?:mrp|m\.?r\.?p\.?|max\.?\s*retail)[\s\:\.\-]*([0-9]+\.?[0-9]*)/i`

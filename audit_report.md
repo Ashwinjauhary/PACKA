@@ -1,5 +1,9 @@
-# PACKA (SIH 26034) - Deep Technical Audit Report
+# PACKA (SIH 26034) - PACKA Application Deep Audit Report 🚨
 
+> [!WARNING]
+> **HISTORICAL DOCUMENT:** This audit report reflects the state of the codebase during the initial review phase. The issues identified below (such as mocked features and deceptive labels) have since been resolved. "LayoutLMv3" has been replaced with the honest "Transformers NER", and mock API calls are now clearly labeled in the UI as `(Simulation / Proof of Concept)`.
+
+## Executive Summary
 This report cross-references the exact state of the codebase (`server/`, `src/`, `ml-backend/`) against the claims made in the SIH Documentation and Pitch.
 
 > [!NOTE]

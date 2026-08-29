@@ -60,7 +60,7 @@ This isn't just an academic exercise — the rules are actively changing. On 13 
 
 1. 📸 **CAPTURE:** A user (LMO, manufacturer, or consumer) uploads an image.
 2. 🧠 **EXTRACT:** A Python AI microservice uses **YOLOv8** (segmentation) and **EasyOCR** (text extraction) to pull raw data.
-3. 🔍 **UNDERSTAND:** **LayoutLMv3** (or NLP Regex) classifies the text into specific semantic fields (MRP, Net Qty).
+3. 🔍 **UNDERSTAND:** **Transformers NER (with a LayoutLMv3-style semantic role)** (or NLP Regex) classifies the text into specific semantic fields (MRP, Net Qty).
 4. ⚙️ **EVALUATE:** A Node.js Rule Engine compares fields and mathematical font calculations against a digitized JSON schema of the LMPC Rules.
 5. 📄 **REPORT:** The system generates an immutable, NIC-styled PDF report and saves the result in PostgreSQL for national analytics.
 

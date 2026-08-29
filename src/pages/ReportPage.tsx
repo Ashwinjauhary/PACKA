@@ -99,13 +99,13 @@ export default function ReportPage() {
                   body: JSON.stringify({ scanId: scan.id, violations: scan.violations, productInfo: scan.productInfo })
                 });
                 if (res.referenceNumber) {
-                  alert(`Synced with e-Jagriti! Reference: ${res.referenceNumber}`);
+                  alert(`[SIMULATION]\nData formatted and synced with e-Jagriti Mock Server.\nRef: ${res.referenceNumber}`);
                 }
               } catch (e) {
                 alert('Failed to sync to e-Jagriti');
               }
             }}>
-              Sync to e-Jagriti / NCH
+              Sync to e-Jagriti (Simulated Demo)
             </button>
           )}
           <button className="btn btn-primary" onClick={handleExportPDF}>

@@ -188,7 +188,7 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
     if (barcodeFraudField) {
       checksWithFonts.push({
         fieldType: 'barcode_fraud' as any,
-        label: 'GS1 Barcode Verification',
+        label: 'GS1 Barcode Verification (Mock Lookup)',
         status: 'fail',
         ruleClause: 'Fraud Prevention',
         extractedText: barcodeFraudField.value,
@@ -198,13 +198,27 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
     } else if (barcodeValidField) {
       checksWithFonts.push({
         fieldType: 'barcode_valid' as any,
-        label: 'GS1 Barcode Verification',
+        label: 'GS1 Barcode Verification (Mock Lookup)',
         status: 'pass',
         ruleClause: 'Fraud Prevention',
         extractedText: barcodeValidField.value,
         details: barcodeValidField.rawText,
         confidence: 1.0
       });
+    }
+
+    // Add generic LayoutLMv3 entities to checks
+    const genericEntities = extractedFields.filter(f => f.fieldType === 'generic_entity');
+    for (const ent of genericEntities) {
+        checksWithFonts.push({
+            fieldType: 'generic_entity' as any,
+            label: ent.label,
+            status: 'pass',
+            ruleClause: 'LayoutLMv3 (Deep Learning)',
+            extractedText: ent.rawText,
+            details: 'Generic entity extracted by Transformers Pipeline',
+            confidence: ent.confidence
+        });
     }
 
     // Recalculate score after font checks

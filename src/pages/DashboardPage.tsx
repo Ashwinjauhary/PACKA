@@ -237,7 +237,7 @@ export default function DashboardPage() {
       {/* E-Commerce Check Section */}
       <div className="glass-card" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-6)' }}>
         <div className="section-header" style={{ marginBottom: 'var(--space-4)' }}>
-          <div className="section-title">E-Commerce Compliance Check (2026 Amendment)</div>
+          <div className="section-title">E-Commerce Compliance Check (Simulation / Proof of Concept)</div>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
           <input 
@@ -257,7 +257,7 @@ export default function DashboardPage() {
                   method: 'POST',
                   body: JSON.stringify({ url })
                 });
-                alert(`Result: ${res.countryOfOrigin}\n\n${res.message}`);
+                alert(`[SIMULATION RESULT]\nResult: ${res.countryOfOrigin}\n\n${res.message}\n\n(Simulated due to Amazon/Flipkart bot protection)`);
               } catch (e) {
                 alert('Failed to check E-Commerce URL');
               }

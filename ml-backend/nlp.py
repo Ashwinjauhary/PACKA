@@ -54,6 +54,18 @@ def perform_ocr_and_ner(image_np) -> Dict[str, Any]:
     # 2. NLP Classification (Refining deep entities with LMPC robust regex fallbacks)
     fields = classify_fields_robust(full_text)
     
+    # 3. Merge LayoutLMv3 entities into the final output
+    if deep_entities:
+        for ent in deep_entities:
+            # We add the generic entities extracted by the LayoutLMv3 pipeline 
+            # to our specific LMPC fields, so they are not just printed but actually used.
+            fields.append({
+                "fieldType": "generic_entity",
+                "label": f"NER: {ent.get('entity_group', 'Entity')}",
+                "rawText": ent.get('word', ''),
+                "confidence": round(ent.get('score', 0) * 100, 2)
+            })
+
     for f in fields:
         f["fontSize"] = float(median_height_px)
         

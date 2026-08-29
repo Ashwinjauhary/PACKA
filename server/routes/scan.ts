@@ -214,7 +214,7 @@ router.post('/', authenticateToken, upload.single('image'), async (req: AuthRequ
             fieldType: 'generic_entity' as any,
             label: ent.label,
             status: 'pass',
-            ruleClause: 'LayoutLMv3 (Deep Learning)',
+            ruleClause: 'Transformers NER (Deep Learning)',
             extractedText: ent.rawText,
             details: 'Generic entity extracted by Transformers Pipeline',
             confidence: ent.confidence

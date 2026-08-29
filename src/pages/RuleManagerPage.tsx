@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 
 export default function RuleManagerPage() {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
+  const token = localStorage.getItem('token');
   const isAdmin = user?.role === 'admin' || user?.role === 'supervisor';
 
   const [lmpcRules, setLmpcRules] = useState<any>(null);
